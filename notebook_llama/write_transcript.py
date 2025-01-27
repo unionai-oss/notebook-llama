@@ -4,13 +4,14 @@ import union
 
 from flytekit.deck import MarkdownRenderer
 from flytekit.extras import accelerators
-from notebook_llama.common import llm_image
+from notebook_llama.images import llm_image
 
 
 DEFAULT_MODEL = "meta-llama/Llama-3.1-8B-Instruct"
+# DEFAULT_MODEL = "meta-llama/Llama-3.1-70B-Instruct"
 
 SYSTEM_PROMPT = """
-You are the a world-class podcast writer, you have worked as a ghost writer for Joe Rogan, Lex Fridman, Ben Shapiro, Tim Ferris.
+You are the a world-class podcast writer, you have worked with many of the top podcasters in the world, like Ira Glass, Stephen J. Dubner, and many more.
 
 We are in an alternate universe where actually you have been writing every line they say and they just stream it into their brains.
 
@@ -34,6 +35,7 @@ ALWAYS START YOUR RESPONSE DIRECTLY WITH SPEAKER 1:
 DO NOT GIVE EPISODE TITLES SEPERATELY, LET SPEAKER 1 TITLE IT IN HER SPEECH
 DO NOT GIVE CHAPTER TITLES
 IT SHOULD STRICTLY BE THE DIALOGUES
+MAKE SURE TO UNPACK ACRONYMS AND TECHNICAL TERMS FOR LAY AUDIENCES
 """
 
 
@@ -66,14 +68,15 @@ def create_llm_pipeline():
         "text-generation",
         model=DEFAULT_MODEL,
         model_kwargs={
-            "torch_dtype": "auto",
             "use_safetensors": True,
-            "quantization_config": BitsAndBytesConfig(
-                load_in_4bit=True,
-                bnb_4bit_use_double_quant=True,
-                bnb_4bit_quant_type="nf4",
-                bnb_4bit_quant_storage=torch.bfloat16,
-            ),
+            "torch_dtype": torch.bfloat16,
+            # "torch_dtype": "auto",
+            # "quantization_config": BitsAndBytesConfig(
+            #     load_in_4bit=True,
+            #     bnb_4bit_use_double_quant=True,
+            #     bnb_4bit_quant_type="nf4",
+            #     bnb_4bit_quant_storage=torch.bfloat16,
+            # ),
         },
         device_map="auto",
     )
@@ -82,11 +85,14 @@ def create_llm_pipeline():
 
 
 @union.task(
+    cache=True,
+    cache_version="1",
     container_image=llm_image,
     enable_deck=True,
     requests=union.Resources(gpu="1", mem="2Gi"),
     accelerator=accelerators.A100,
     secret_requests=[union.Secret(key="huggingface_api_key")],
+    environment={"TRANSFORMERS_VERBOSITY": "debug"},
 )
 def write_transcript(pdf_text: union.FlyteFile) -> union.FlyteFile:
     import huggingface_hub
@@ -100,6 +106,7 @@ def write_transcript(pdf_text: union.FlyteFile) -> union.FlyteFile:
     input_prompt = read_file_to_string(pdf_text.path)
     print(f"Input prompt: {input_prompt}")
 
+    print("Loading pipeline")
     pipeline = create_llm_pipeline()
     print(f"Pipeline:\n{pipeline}")
     messages = [

@@ -5,21 +5,19 @@ import union
 
 from flytekit.deck import MarkdownRenderer
 from flytekit.extras import accelerators
-from notebook_llama.common import llm_image
+from notebook_llama.images import llm_image
 
 
 N_RETRIES = 5
 DEFAULT_MODEL = "meta-llama/Llama-3.1-8B-Instruct"
+# DEFAULT_MODEL = "meta-llama/Llama-3.1-70B-Instruct"
 
 SYSTEM_PROMPT = """
-You are an international oscar winnning screenwriter
+You are an international oscar winning screenwriter
 
 You have been working with multiple award winning podcasters.
-
 Your job is to use the podcast transcript written below to re-write it for an AI Text-To-Speech Pipeline. A very dumb AI had written this so you have to step up for your kind.
-
 Make it as engaging as possible, Speaker 1 and 2 will be simulated by different voice engines
-
 Remember Speaker 2 is new to the topic and the conversation should always have realistic anecdotes and analogies sprinkled throughout. The questions should have real world example follow ups etc
 
 Speaker 1: Leads the conversation and teaches the speaker 2, gives incredible anecdotes and analogies when explaining. Is a captivating teacher that gives great anecdotes
@@ -28,22 +26,16 @@ Speaker 2: Keeps the conversation on track by asking follow up questions. Gets s
 
 Make sure the tangents speaker 2 provides are quite wild or interesting.
 
-Ensure there are interruptions during explanations or there are "hmm" and "umm" injected throughout from the Speaker 2.
+Ensure there are interruptions during explanations injected throughout from the Speaker 2.
 
-REMEMBER THIS WITH YOUR HEART
-The TTS Engine for Speaker 1 cannot do "umms, hmms" well so keep it straight text
-
-For Speaker 2 use "umm, hmm" as much, you can also use [sigh] and [laughs]. BUT ONLY THESE OPTIONS FOR EXPRESSIONS
-
-It should be a real podcast with every fine nuance documented in as much detail as possible. Welcome the listeners with a super fun overview and keep it really catchy and almost borderline click bait
-
-Please re-write to make it as characteristic as possible
-
-START YOUR RESPONSE DIRECTLY WITH SPEAKER 1:
-
-STRICTLY RETURN YOUR RESPONSE AS A LIST OF LISTS OK?
-
-IT WILL START DIRECTLY WITH THE LIST AND END WITH THE LIST NOTHING ELSE
+MAKE SURE TO DO THE FOLLOWING:
+- The TTS Engine for Speaker 1 and 2 cannot do "umms, hmms" well so keep it straight text
+- It should be a real podcast with every fine nuance documented in as much detail as possible. Welcome the listeners with a super fun overview and keep it really catchy and almost borderline click bait
+- In the script text, replace [Speaker 1] with Laura and [Speaker 2] with Gary
+- Please re-write to make it as characteristic as possible
+- START YOUR RESPONSE DIRECTLY WITH SPEAKER 1:
+- STRICTLY RETURN YOUR RESPONSE AS A LIST OF LISTS OK?
+- IT WILL START DIRECTLY WITH THE LIST AND END WITH THE LIST NOTHING ELSE
 
 Example of response:
 [
@@ -64,14 +56,15 @@ def create_llm_pipeline():
         "text-generation",
         model=DEFAULT_MODEL,
         model_kwargs={
-            "torch_dtype": "auto",
             "use_safetensors": True,
-            "quantization_config": BitsAndBytesConfig(
-                load_in_4bit=True,
-                bnb_4bit_use_double_quant=True,
-                bnb_4bit_quant_type="nf4",
-                bnb_4bit_quant_storage=torch.bfloat16,
-            ),
+            "torch_dtype": torch.bfloat16,
+            # "torch_dtype": "auto",
+            # "quantization_config": BitsAndBytesConfig(
+            #     load_in_4bit=True,
+            #     bnb_4bit_use_double_quant=True,
+            #     bnb_4bit_quant_type="nf4",
+            #     bnb_4bit_quant_storage=torch.bfloat16,
+            # ),
         },
         device_map="auto",
     )
@@ -80,21 +73,29 @@ def create_llm_pipeline():
 
 
 @union.task(
+    cache=True,
+    cache_version="4",
     container_image=llm_image,
     enable_deck=True,
     requests=union.Resources(gpu="1", mem="2Gi"),
     accelerator=accelerators.A100,
     secret_requests=[union.Secret(key="huggingface_api_key")],
+    environment={"TRANSFORMERS_VERBOSITY": "debug"},
 )
-def rewrite_transcript(transcript: str) -> union.FlyteFile:
+def rewrite_transcript(transcript: union.FlyteFile) -> union.FlyteFile:
     import huggingface_hub
 
     huggingface_hub.login(
         token=union.current_context().secrets.get(key="huggingface_api_key")
     )
+
+    with open(transcript, "r", encoding="utf-8") as f:
+        transcript = f.read()
+
     print(f"System prompt: {SYSTEM_PROMPT}")
     print(f"Transcript: {transcript}")
 
+    print("Loading pipeline")
     pipeline = create_llm_pipeline()
     print(f"Pipeline:\n{pipeline}")
     messages = [

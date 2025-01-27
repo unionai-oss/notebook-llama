@@ -4,11 +4,10 @@ from pathlib import Path
 
 import union
 from flytekit.extras import accelerators
+from flytekit.deck import MarkdownRenderer
 
 from notebook_llama.images import audio_image
 
-from IPython.display import Audio
-import IPython.display as ipd
 from tqdm import tqdm
 
 import torch
@@ -21,10 +20,14 @@ speaker1_description = """
 Laura's voice is expressive and dramatic in delivery, speaking at a moderately fast pace with a very close recording that almost has no background noise.
 """
 
-bark_sampling_rate = 24000
+speaker2_description = """
+Gary's voice is calm and smooth in delivery, speaking at a moderate pace with a very close recording that almost has no background noise.
+"""
+
+TTS_MODEL = "parler-tts/parler-tts-mini-v1"
 
 
-def create_tts_pipeline_speaker1():
+def create_tts_pipeline(use_4bit: bool = False):
     from transformers import AutoTokenizer, BitsAndBytesConfig
     from parler_tts import ParlerTTSForConditionalGeneration
 
@@ -35,59 +38,34 @@ def create_tts_pipeline_speaker1():
         bnb_4bit_quant_storage=torch.bfloat16,
     )
 
+    kwargs = {}
+    if use_4bit:
+        kwargs["quantization_config"] = bitsandbytes_config
+        kwargs["torch_dtype"] = "auto"
+    else:
+        kwargs["torch_dtype"] = torch.bfloat16
+
     parler_model = ParlerTTSForConditionalGeneration.from_pretrained(
-        "parler-tts/parler-tts-mini-v1",
-        torch_dtype="auto",
-        quantization_config=bitsandbytes_config,
+        TTS_MODEL, **kwargs,
     ).to(device)
-    parler_tokenizer = AutoTokenizer.from_pretrained("parler-tts/parler-tts-mini-v1")
+    parler_tokenizer = AutoTokenizer.from_pretrained(TTS_MODEL)
     return parler_model, parler_tokenizer
 
 
-def create_tts_pipeline_speaker2():
-    from transformers import AutoProcessor, BarkModel, BitsAndBytesConfig
-
-    bitsandbytes_config = BitsAndBytesConfig(
-        load_in_4bit=True,
-        bnb_4bit_use_double_quant=True,
-        bnb_4bit_quant_type="nf4",
-        bnb_4bit_quant_storage=torch.bfloat16,
-    )
-
-    bark_processor = AutoProcessor.from_pretrained("suno/bark")
-    bark_model = (
-        BarkModel.from_pretrained(
-            "suno/bark",
-            torch_dtype="auto",
-            quantization_config=bitsandbytes_config,
-        )
-        .to(device)
-        .to_bettertransformer()
-    )
-    return bark_processor, bark_model
-
-
-def generate_speaker1_audio(parler_model, parler_tokenizer, text):
+def generate_speaker_audio(parler_model, parler_tokenizer, text, speaker_description):
     """Generate audio using ParlerTTS for Speaker 1"""
-    input_ids = parler_tokenizer(
-        speaker1_description, return_tensors="pt"
-    ).input_ids.to(device)
-    prompt_input_ids = parler_tokenizer(text, return_tensors="pt").input_ids.to(device)
-    generation = parler_model.generate(
-        input_ids=input_ids, prompt_input_ids=prompt_input_ids
-    )
-    audio_arr = generation.cpu().numpy().squeeze()
+    import torch
+
+    with torch.no_grad():
+        input_ids = parler_tokenizer(
+            speaker_description, return_tensors="pt"
+        ).input_ids.to(device)
+        prompt_input_ids = parler_tokenizer(text, return_tensors="pt").input_ids.to(device)
+        generation = parler_model.generate(
+            input_ids=input_ids, prompt_input_ids=prompt_input_ids
+        )
+        audio_arr = generation.cpu().to(torch.float32).numpy().squeeze()
     return audio_arr, parler_model.config.sampling_rate
-
-
-def generate_speaker2_audio(bark_model, bark_processor, text):
-    """Generate audio using Bark for Speaker 2"""
-    inputs = bark_processor(text, voice_preset="v2/en_speaker_6").to(device)
-    speech_output = bark_model.generate(
-        **inputs, temperature=0.9, semantic_temperature=0.8
-    )
-    audio_arr = speech_output[0].cpu().numpy()
-    return audio_arr, bark_sampling_rate
 
 
 def numpy_to_audio_segment(audio_arr, sampling_rate):
@@ -110,18 +88,19 @@ def numpy_to_audio_segment(audio_arr, sampling_rate):
 def produce_final_audio(podcast_text: list[list[str]]) -> Path:
     final_audio = None
 
-    parler_model, parler_tokenizer = create_tts_pipeline_speaker1()
-    bark_processor, bark_model = create_tts_pipeline_speaker2()
+    parler_model, parler_tokenizer = create_tts_pipeline()
 
     for speaker, text in tqdm(
         podcast_text, desc="Generating podcast segments", unit="segment"
     ):
-        if speaker == "Speaker 1":
-            audio_arr, rate = generate_speaker1_audio(
-                parler_model, parler_tokenizer, text
+        if speaker == "Laura":
+            audio_arr, rate = generate_speaker_audio(
+                parler_model, parler_tokenizer, text, speaker1_description
             )
-        else:  # Speaker 2
-            audio_arr, rate = generate_speaker2_audio(bark_model, bark_processor, text)
+        else:
+            audio_arr, rate = generate_speaker_audio(
+                parler_model, parler_tokenizer, text, speaker2_description
+            )
 
         # Convert to AudioSegment (pydub will handle sample rate conversion automatically)
         audio_segment = numpy_to_audio_segment(audio_arr, rate)
@@ -144,10 +123,13 @@ def produce_final_audio(podcast_text: list[list[str]]) -> Path:
 
 
 @union.task(
+    # cache=True,
+    # cache_version="2",
     container_image=audio_image,
     enable_deck=True,
-    requests=union.Resources(gpu="1", mem="2Gi"),
+    requests=union.Resources(gpu="1", mem="8Gi"),
     accelerator=accelerators.A100,
+    environment={"TRANSFORMERS_VERBOSITY": "debug"},
 )
 def generate_podcast(clean_transcript: union.FlyteFile) -> union.FlyteFile:
     with open(clean_transcript, "r") as f:
@@ -160,3 +142,34 @@ def generate_podcast(clean_transcript: union.FlyteFile) -> union.FlyteFile:
 
     audio_file = produce_final_audio(podcast_text)
     return union.FlyteFile(str(audio_file))
+
+
+@union.task(
+    container_image=audio_image,
+    enable_deck=True,
+    deck_fields=[],
+    requests=union.Resources(cpu="2", mem="2Gi"),
+)
+def create_podcast_deck(podcast: union.FlyteFile, clean_transcript: union.FlyteFile):
+    from IPython.display import Audio
+    import IPython.display as ipd
+
+    podcast.download()
+
+    audio = Audio(podcast.path)
+    ipd.display(audio)
+
+    deck = union.Deck(
+        name="Generated Podcast",
+        html=audio._repr_html_(),
+    )
+
+    with open(clean_transcript, "r") as f:
+        podcast_text = json.load(f)
+
+    markdown_transcript = "# Podcast Transcript\n\n"
+
+    for speaker, text in podcast_text:
+        markdown_transcript += f"- **{speaker}:** {text}\n\n"
+
+    deck.append(MarkdownRenderer().to_html(markdown_transcript))

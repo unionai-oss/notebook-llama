@@ -223,11 +223,14 @@ def extract_text(pdf_path: union.FlyteFile) -> union.FlyteFile:
 
 
 @union.task(
+    cache=True,
+    cache_version="1",
     container_image=llm_image,
     enable_deck=True,
     requests=union.Resources(gpu="1", mem="2Gi"),
-    accelerator=accelerators.T4,
+    accelerator=accelerators.L4,
     secret_requests=[union.Secret(key="huggingface_api_key")],
+    environment={"TRANSFORMERS_VERBOSITY": "debug"},
 )
 def preprocess_pdf(
     input_file: union.FlyteFile,
@@ -240,6 +243,11 @@ def preprocess_pdf(
     from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
     from tqdm import tqdm
 
+    # Read the file
+    input_file.download()
+    with open(input_file, "r", encoding="utf-8") as file:
+        text = file.read()
+
     huggingface_hub.login(
         token=union.current_context().secrets.get(key="huggingface_api_key")
     )
@@ -248,25 +256,21 @@ def preprocess_pdf(
     accelerator = Accelerator()
     model = AutoModelForCausalLM.from_pretrained(
         DEFAULT_MODEL,
-        torch_dtype="auto",
         use_safetensors=True,
-        quantization_config=BitsAndBytesConfig(
-            load_in_4bit=True,
-            bnb_4bit_use_double_quant=True,
-            bnb_4bit_quant_type="nf4",
-            bnb_4bit_quant_storage=torch.bfloat16,
-        ),
+        torch_dtype=torch.bfloat16,
+        # torch_dtype="auto",
+        # quantization_config=BitsAndBytesConfig(
+        #     load_in_4bit=True,
+        #     bnb_4bit_use_double_quant=True,
+        #     bnb_4bit_quant_type="nf4",
+        #     bnb_4bit_quant_storage=torch.bfloat16,
+        # ),
         device_map="auto",
     )
     tokenizer = AutoTokenizer.from_pretrained(DEFAULT_MODEL, use_safetensors=True)
     model, tokenizer = accelerator.prepare(model, tokenizer)
     print(f"Model: {model}")
     print(f"Tokenizer: {tokenizer}")
-
-    # Read the file
-    input_file.download()
-    with open(input_file, "r", encoding="utf-8") as file:
-        text = file.read()
 
     # Calculate number of chunks
     num_chunks = (len(text) + chunk_size - 1) // chunk_size
