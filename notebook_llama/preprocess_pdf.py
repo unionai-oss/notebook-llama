@@ -4,8 +4,8 @@ from pathlib import Path
 
 import union
 from flytekit.deck import MarkdownRenderer
-from flytekit.extras import accelerators
-from notebook_llama.images import image, llm_image
+from notebook_llama.images import image
+from notebook_llama.actors import llama_actor, load_llm_model
 
 
 DEFAULT_MODEL = "meta-llama/Llama-3.2-1B-Instruct"
@@ -183,7 +183,7 @@ def process_chunk(
     container_image=image,
     enable_deck=True,
     cache=True,
-    cache_version="1",
+    cache_version="4",
 )
 def extract_text(pdf_path: union.FlyteFile) -> union.FlyteFile:
     pdf_path.download()
@@ -222,15 +222,10 @@ def extract_text(pdf_path: union.FlyteFile) -> union.FlyteFile:
     return union.FlyteFile(str(output_file))
 
 
-@union.task(
+@llama_actor.task(
     cache=True,
-    cache_version="1",
-    container_image=llm_image,
+    cache_version="4",
     enable_deck=True,
-    requests=union.Resources(gpu="1", mem="2Gi"),
-    accelerator=accelerators.L4,
-    secret_requests=[union.Secret(key="huggingface_api_key")],
-    environment={"TRANSFORMERS_VERBOSITY": "debug"},
 )
 def preprocess_pdf(
     input_file: union.FlyteFile,
@@ -239,8 +234,6 @@ def preprocess_pdf(
 ) -> union.FlyteFile:
     import huggingface_hub
     import torch
-    from accelerate import Accelerator
-    from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
     from tqdm import tqdm
 
     # Read the file
@@ -253,22 +246,7 @@ def preprocess_pdf(
     )
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"Using device: {device}")
-    accelerator = Accelerator()
-    model = AutoModelForCausalLM.from_pretrained(
-        DEFAULT_MODEL,
-        use_safetensors=True,
-        torch_dtype=torch.bfloat16,
-        # torch_dtype="auto",
-        # quantization_config=BitsAndBytesConfig(
-        #     load_in_4bit=True,
-        #     bnb_4bit_use_double_quant=True,
-        #     bnb_4bit_quant_type="nf4",
-        #     bnb_4bit_quant_storage=torch.bfloat16,
-        # ),
-        device_map="auto",
-    )
-    tokenizer = AutoTokenizer.from_pretrained(DEFAULT_MODEL, use_safetensors=True)
-    model, tokenizer = accelerator.prepare(model, tokenizer)
+    model, tokenizer = load_llm_model(DEFAULT_MODEL)
     print(f"Model: {model}")
     print(f"Tokenizer: {tokenizer}")
 

@@ -3,18 +3,15 @@ import json
 from pathlib import Path
 
 import union
-from flytekit.extras import accelerators
 from flytekit.deck import MarkdownRenderer
 
-from notebook_llama.images import audio_image
+from notebook_llama.actors import parler_tts_actor, load_tts_pipeline, load_kokoro_pipeline
 
 from tqdm import tqdm
 
 import torch
 import numpy as np
 
-
-device = "cuda" if torch.cuda.is_available() else "cpu"
 
 speaker1_description = """
 Laura's voice is expressive and dramatic in delivery, speaking at a moderately fast pace with a very close recording that almost has no background noise.
@@ -25,34 +22,10 @@ Gary's voice is calm and smooth in delivery, speaking at a moderate pace with a 
 """
 
 TTS_MODEL = "parler-tts/parler-tts-mini-v1"
+KOKORO_SAMPLE_RATE = 24000
 
 
-def create_tts_pipeline(use_4bit: bool = False):
-    from transformers import AutoTokenizer, BitsAndBytesConfig
-    from parler_tts import ParlerTTSForConditionalGeneration
-
-    bitsandbytes_config = BitsAndBytesConfig(
-        load_in_4bit=True,
-        bnb_4bit_use_double_quant=True,
-        bnb_4bit_quant_type="nf4",
-        bnb_4bit_quant_storage=torch.bfloat16,
-    )
-
-    kwargs = {}
-    if use_4bit:
-        kwargs["quantization_config"] = bitsandbytes_config
-        kwargs["torch_dtype"] = "auto"
-    else:
-        kwargs["torch_dtype"] = torch.bfloat16
-
-    parler_model = ParlerTTSForConditionalGeneration.from_pretrained(
-        TTS_MODEL, **kwargs,
-    ).to(device)
-    parler_tokenizer = AutoTokenizer.from_pretrained(TTS_MODEL)
-    return parler_model, parler_tokenizer
-
-
-def generate_speaker_audio(parler_model, parler_tokenizer, text, speaker_description):
+def generate_speaker_audio(parler_model, parler_tokenizer, device, text, speaker_description):
     """Generate audio using ParlerTTS for Speaker 1"""
     import torch
 
@@ -66,6 +39,18 @@ def generate_speaker_audio(parler_model, parler_tokenizer, text, speaker_descrip
         )
         audio_arr = generation.cpu().to(torch.float32).numpy().squeeze()
     return audio_arr, parler_model.config.sampling_rate
+
+
+def generate_kokoro_speaker_audio(pipeline, text: str, voice: str):
+    import torch
+
+    with torch.no_grad():
+        generator = pipeline(text, voice=voice, speed=1, split_pattern=r"\n+")
+        audio_list = []
+        for _, (_, _, audio) in enumerate(generator):
+            audio_list.append(audio)
+        audio_arr = torch.cat(audio_list).cpu().to(torch.float32).numpy().squeeze()
+    return audio_arr, KOKORO_SAMPLE_RATE
 
 
 def numpy_to_audio_segment(audio_arr, sampling_rate):
@@ -86,21 +71,30 @@ def numpy_to_audio_segment(audio_arr, sampling_rate):
 
 
 def produce_final_audio(podcast_text: list[list[str]]) -> Path:
+    device = "cuda" if torch.cuda.is_available() else "cpu"
     final_audio = None
 
-    parler_model, parler_tokenizer = create_tts_pipeline()
+    kokoro_pipeline = load_kokoro_pipeline(device)
+    # parler_model, parler_tokenizer = load_tts_pipeline(TTS_MODEL, device, use_4bit=False)
 
     for speaker, text in tqdm(
         podcast_text, desc="Generating podcast segments", unit="segment"
     ):
+        text = text.replace("\n", " ")
         if speaker == "Laura":
-            audio_arr, rate = generate_speaker_audio(
-                parler_model, parler_tokenizer, text, speaker1_description
+            audio_arr, rate = generate_kokoro_speaker_audio(
+                kokoro_pipeline, text, "af_heart"
             )
+            # audio_arr, rate = generate_speaker_audio(
+            #     parler_model, parler_tokenizer, text, speaker1_description
+            # )
         else:
-            audio_arr, rate = generate_speaker_audio(
-                parler_model, parler_tokenizer, text, speaker2_description
+            audio_arr, rate = generate_kokoro_speaker_audio(
+                kokoro_pipeline, text, "am_liam"
             )
+            # audio_arr, rate = generate_speaker_audio(
+            #     parler_model, parler_tokenizer, text, speaker2_description
+            # )
 
         # Convert to AudioSegment (pydub will handle sample rate conversion automatically)
         audio_segment = numpy_to_audio_segment(audio_arr, rate)
@@ -122,14 +116,10 @@ def produce_final_audio(podcast_text: list[list[str]]) -> Path:
     return output_file
 
 
-@union.task(
+@parler_tts_actor.task(
     # cache=True,
     # cache_version="2",
-    container_image=audio_image,
     enable_deck=True,
-    requests=union.Resources(gpu="1", mem="8Gi"),
-    accelerator=accelerators.A100,
-    environment={"TRANSFORMERS_VERBOSITY": "debug"},
 )
 def generate_podcast(clean_transcript: union.FlyteFile) -> union.FlyteFile:
     with open(clean_transcript, "r") as f:
@@ -144,11 +134,9 @@ def generate_podcast(clean_transcript: union.FlyteFile) -> union.FlyteFile:
     return union.FlyteFile(str(audio_file))
 
 
-@union.task(
-    container_image=audio_image,
+@parler_tts_actor.task(
     enable_deck=True,
     deck_fields=[],
-    requests=union.Resources(cpu="2", mem="2Gi"),
 )
 def create_podcast_deck(podcast: union.FlyteFile, clean_transcript: union.FlyteFile):
     from IPython.display import Audio
