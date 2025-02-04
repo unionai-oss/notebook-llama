@@ -3,7 +3,7 @@ from pathlib import Path
 import union
 
 from flytekit.deck import MarkdownRenderer
-from notebook_llama.actors import llama_actor, load_llm_pipeline
+from notebook_llama.actors import llama_writing_actor, load_llm_pipeline
 
 
 DEFAULT_MODEL = "meta-llama/Llama-3.1-8B-Instruct"
@@ -58,7 +58,7 @@ def read_file_to_string(filename: str) -> str:
         raise
 
 
-@llama_actor.task(
+@llama_writing_actor.task(
     cache=True,
     cache_version="2",
     enable_deck=True,

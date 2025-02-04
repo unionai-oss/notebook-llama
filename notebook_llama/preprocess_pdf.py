@@ -5,7 +5,7 @@ from pathlib import Path
 import union
 from flytekit.deck import MarkdownRenderer
 from notebook_llama.images import image
-from notebook_llama.actors import llama_actor, load_llm_model
+from notebook_llama.actors import llama_preprocessing_actor, load_llm_model
 
 
 DEFAULT_MODEL = "meta-llama/Llama-3.2-1B-Instruct"
@@ -34,9 +34,6 @@ def validate_pdf(file_path: str) -> bool:
     if not os.path.exists(file_path):
         print(f"Error: File not found at path: {file_path}")
         return False
-    if not file_path.lower().endswith(".pdf"):
-        print("Error: File is not a PDF")
-        return False
     return True
 
 
@@ -46,7 +43,7 @@ def extract_text_from_pdf(
 ) -> str | None:
     import PyPDF2
 
-    if not validate_pdf(file_path):
+    if not validate_pdf(str(file_path)):
         return None
 
     try:
@@ -183,9 +180,11 @@ def process_chunk(
     container_image=image,
     enable_deck=True,
     cache=True,
-    cache_version="4",
+    cache_version="11",
 )
 def extract_text(pdf_path: union.FlyteFile) -> union.FlyteFile:
+
+    print(f"Downloading PDF from FlyteFile {pdf_path}")
     pdf_path.download()
     pdf_path = pdf_path.path
 
@@ -222,7 +221,7 @@ def extract_text(pdf_path: union.FlyteFile) -> union.FlyteFile:
     return union.FlyteFile(str(output_file))
 
 
-@llama_actor.task(
+@llama_preprocessing_actor.task(
     cache=True,
     cache_version="4",
     enable_deck=True,

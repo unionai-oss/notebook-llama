@@ -4,7 +4,7 @@ from pathlib import Path
 import union
 
 from flytekit.deck import MarkdownRenderer
-from notebook_llama.actors import llama_actor, load_llm_pipeline
+from notebook_llama.actors import llama_writing_actor, load_llm_pipeline
 
 
 N_RETRIES = 5
@@ -30,7 +30,8 @@ Ensure there are interruptions during explanations injected throughout from the 
 MAKE SURE TO DO THE FOLLOWING:
 - The TTS Engine for Speaker 1 and 2 cannot do "umms, hmms" well so keep it straight text
 - It should be a real podcast with every fine nuance documented in as much detail as possible. Welcome the listeners with a super fun overview and keep it really catchy and almost borderline click bait
-- In the script text, replace [Speaker 1] with Laura and [Speaker 2] with Liam
+- The first element in the list of lists should be "Speaker 1" or "Speaker 2"
+- The second element in the list of lists should be what the speaker is saying. Make sure to replace [Speaker 1] with Laura and [Speaker 2] with Liam
 - Please re-write to make it as characteristic as possible
 - START YOUR RESPONSE DIRECTLY WITH SPEAKER 1:
 - STRICTLY RETURN YOUR RESPONSE AS A LIST OF LISTS OK?
@@ -38,15 +39,15 @@ MAKE SURE TO DO THE FOLLOWING:
 
 Example of response:
 [
-    ["Speaker 1", "Welcome to our podcast, where we explore the latest advancements in AI and technology. I'm your host, and today we're joined by a renowned expert in the field of AI. We're going to dive into the exciting world of Llama 3.2, the latest release from Meta AI."],
-    ["Speaker 2", "Hi, I'm excited to be here! So, what is Llama 3.2?"],
+    ["Speaker 1", "Welcome to our podcast where we explore the latest advancements in AI and technology. I'm your host, Laura, and today we're joined by a renowned expert in the field of AI. We're going to dive into the exciting world of Llama 3.2, the latest release from Meta AI."],
+    ["Speaker 2", "Hi, I'm Liam, and I'm excited to be here! So, what is Llama 3.2?"],
     ["Speaker 1", "Ah, great question! Llama 3.2 is an open-source AI model that allows developers to fine-tune, distill, and deploy AI models anywhere. It's a significant update from the previous version, with improved performance, efficiency, and customization options."],
     ["Speaker 2", "That sounds amazing! What are some of the key features of Llama 3.2?"]
 ]
 """
 
 
-@llama_actor.task(
+@llama_writing_actor.task(
     cache=True,
     cache_version="6",
     enable_deck=True,

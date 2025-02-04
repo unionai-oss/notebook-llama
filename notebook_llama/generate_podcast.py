@@ -81,20 +81,14 @@ def produce_final_audio(podcast_text: list[list[str]]) -> Path:
         podcast_text, desc="Generating podcast segments", unit="segment"
     ):
         text = text.replace("\n", " ")
-        if speaker == "Laura":
+        if speaker in {"Laura", "Speaker 1"}:
             audio_arr, rate = generate_kokoro_speaker_audio(
                 kokoro_pipeline, text, "af_heart"
             )
-            # audio_arr, rate = generate_speaker_audio(
-            #     parler_model, parler_tokenizer, text, speaker1_description
-            # )
         else:
             audio_arr, rate = generate_kokoro_speaker_audio(
                 kokoro_pipeline, text, "am_liam"
             )
-            # audio_arr, rate = generate_speaker_audio(
-            #     parler_model, parler_tokenizer, text, speaker2_description
-            # )
 
         # Convert to AudioSegment (pydub will handle sample rate conversion automatically)
         audio_segment = numpy_to_audio_segment(audio_arr, rate)
@@ -117,8 +111,8 @@ def produce_final_audio(podcast_text: list[list[str]]) -> Path:
 
 
 @parler_tts_actor.task(
-    # cache=True,
-    # cache_version="2",
+    cache=True,
+    cache_version="3",
     enable_deck=True,
 )
 def generate_podcast(clean_transcript: union.FlyteFile) -> union.FlyteFile:
@@ -135,6 +129,8 @@ def generate_podcast(clean_transcript: union.FlyteFile) -> union.FlyteFile:
 
 
 @parler_tts_actor.task(
+    cache=True,
+    cache_version="1",
     enable_deck=True,
     deck_fields=[],
 )

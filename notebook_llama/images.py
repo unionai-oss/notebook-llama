@@ -4,6 +4,7 @@ import union
 image = union.ImageSpec(
     name="notebook_llama",
     packages=[
+        "requests==2.32.3",
         "PyPDF2>=3.0.0",
         "huggingface-hub>=0.19.0",
         "torch>=2.0.0",
@@ -12,7 +13,7 @@ image = union.ImageSpec(
         "rich>=13.0.0",
         "ipywidgets>=8.0.0",
         "tqdm>=4.66.0",
-        "union==0.1.136",
+        "union==0.1.139",
     ],
 )
 

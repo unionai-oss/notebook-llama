@@ -6,10 +6,22 @@ from flytekit.extras import accelerators
 from notebook_llama.images import audio_image, llm_image
 
 
-llama_actor = union.ActorEnvironment(
-    name="llama-actor",
+llama_preprocessing_actor = union.ActorEnvironment(
+    name="llama-preprocessing-actor",
     container_image=llm_image,
     requests=union.Resources(gpu="1", mem="2Gi"),
+    ttl_seconds=300,
+    accelerator=accelerators.L4,
+    secret_requests=[union.Secret(key="huggingface_api_key")],
+    environment={"TRANSFORMERS_VERBOSITY": "debug"},
+)
+
+
+llama_writing_actor = union.ActorEnvironment(
+    name="llama-writing-actor",
+    container_image=llm_image,
+    requests=union.Resources(gpu="1", mem="2Gi"),
+    ttl_seconds=300,
     accelerator=accelerators.L4,
     secret_requests=[union.Secret(key="huggingface_api_key")],
     environment={"TRANSFORMERS_VERBOSITY": "debug"},
@@ -20,6 +32,7 @@ parler_tts_actor = union.ActorEnvironment(
     name="parler-tts-actor",
     container_image=audio_image,
     requests=union.Resources(gpu="1", mem="4Gi"),
+    ttl_seconds=300,
     accelerator=accelerators.T4,
     secret_requests=[union.Secret(key="huggingface_api_key")],
     environment={"TRANSFORMERS_VERBOSITY": "debug"},
