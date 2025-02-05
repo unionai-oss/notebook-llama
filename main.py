@@ -3,19 +3,14 @@ from datetime import timedelta
 import streamlit as st
 import union
 
-st.title("📖🎙️ My NotebookLM Clone")
 
 WORKFLOW_NAME = "notebook_llama.pdf_to_podcast.pdf_to_podcast"
 UPLOAD_FILE_PATH = "./uploaded_file.pdf"
 
 
-@st.cache_resource
-def get_remote():
-    return union.UnionRemote()
-
-
+@st.cache_data(show_spinner=False)
 def generate_podcast(filepath_or_url: str):
-    remote = get_remote()
+    remote = union.UnionRemote()
 
     workflow = remote.fetch_workflow(
         name=WORKFLOW_NAME,
@@ -37,11 +32,15 @@ def generate_podcast(filepath_or_url: str):
     transcript_file = execution.outputs["transcript"]
     transcript_file.download()
 
-    return podcast_audio_file, transcript_file
+    return podcast_audio_file.path, transcript_file.path
 
 
 def main():
-    pdf_url = st.text_input("Enter a PDF URL")
+    st.title("📖🎙️ My NotebookLM Clone")
+    st.write("This app generates a podcast from a PDF.")
+
+    default_url = "https://www.biorxiv.org/content/10.1101/544593v2.full.pdf"
+    pdf_url = st.text_input("Enter a PDF URL", value=default_url)
     uploaded_file = st.file_uploader("Or upload a PDF.")
     
     if pdf_url is not None or uploaded_file is not None:
@@ -60,9 +59,9 @@ def main():
             podcast_audio_file, transcript_file = generate_podcast(pdf_path)
 
         if podcast_audio_file is not None:
-            st.audio(podcast_audio_file.path)
+            st.audio(podcast_audio_file)
 
-            with open(transcript_file.path, "r") as f:
+            with open(transcript_file, "r") as f:
                 transcript = json.load(f)
 
             st.write("## Transcript")
@@ -72,3 +71,8 @@ def main():
 
 
 main()
+
+# TODO:
+# - Return execution id with console url
+# - Add "Get podcast" button to load the podcast. If execution is not complete,
+#   show spinner

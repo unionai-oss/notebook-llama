@@ -1,7 +1,7 @@
 import union
 
 
-image = union.ImageSpec(
+llm_image = union.ImageSpec(
     name="notebook_llama",
     packages=[
         "requests==2.32.3",
@@ -17,19 +17,14 @@ image = union.ImageSpec(
     ],
 )
 
-llm_image = image.with_packages(["bitsandbytes>=0.41.0"])
-
-audio_image = image.with_apt_packages(
+audio_image = llm_image.with_apt_packages(
     ["espeak-ng", "ffmpeg", "git", "llvm"]
 ).with_packages(
     [
-        "bitsandbytes>=0.41.0",
         "llvmlite==0.43.0",
         "kokoro>=0.3.4",
         "numba==0.60.0",
         "optimum",
-        "bark",
-        "parler-tts",
         "pydub",
         "scipy",
         "soundfile",

@@ -6,7 +6,7 @@ from flytekit.deck import MarkdownRenderer
 from notebook_llama.actors import llama_writing_actor, load_llm_pipeline
 
 
-DEFAULT_MODEL = "meta-llama/Llama-3.1-8B-Instruct"
+DEFAULT_MODEL = "meta-llama/Llama-3.2-3B-Instruct"
 # DEFAULT_MODEL = "meta-llama/Llama-3.1-70B-Instruct"
 
 SYSTEM_PROMPT = """
@@ -18,11 +18,11 @@ You have won multiple podcast awards for your writing.
  
 Your job is to write word by word, even "umm, hmmm, right" interruptions by the second speaker based on the PDF upload. Keep it extremely engaging, the speakers can get derailed now and then but should discuss the topic.
 
-Remember Speaker 2 is new to the topic and the conversation should always have realistic anecdotes and analogies sprinkled throughout. The questions should have real world example follow ups etc
+Remember Speaker 2 is an expert on the topic and the conversation should always have realistic anecdotes and analogies sprinkled throughout. The questions should have real world example follow ups etc
 
-Speaker 1: Leads the conversation and teaches the speaker 2, gives incredible anecdotes and analogies when explaining. Is a captivating teacher that gives great anecdotes
+Speaker 1: Leads the conversation and asks pointed questions to the speaker 2 and keeps the conversation on track by asking follow up questions. Keeps the conversation on track by asking follow up questions. Gets super excited or confused when asking questions. Is a curious mindset that asks very interesting confirmation questions
 
-Speaker 2: Keeps the conversation on track by asking follow up questions. Gets super excited or confused when asking questions. Is a curious mindset that asks very interesting confirmation questions
+Speaker 2: Is an expert on the topic at hand, gives incredible anecdotes and analogies when explaining complex and abstract concepts. Is a captivating teacher that gives great anecdotes
 
 Make sure the tangents speaker 2 provides are quite wild or interesting.
 
@@ -35,6 +35,16 @@ DO NOT GIVE EPISODE TITLES SEPERATELY, LET SPEAKER 1 TITLE IT IN HER SPEECH
 DO NOT GIVE CHAPTER TITLES
 IT SHOULD STRICTLY BE THE DIALOGUES
 MAKE SURE TO UNPACK ACRONYMS AND TECHNICAL TERMS FOR LAY AUDIENCES
+
+Example of response:
+
+Speaker 1: Welcome to our podcast where we explore the latest advancements in AI and technology. I'm your host, Laura, and today we're joined by a renowned expert in the field of AI. We're going to dive into the exciting world of Llama 3.2, the latest release from Meta AI.
+
+Speaker 2: Hi, I'm Liam, and I'm excited to be here! So, what is Llama 3.2?
+
+Speaker 1: Ah, great question! Llama 3.2 is an open-source AI model that allows developers to fine-tune, distill, and deploy AI models anywhere. It's a significant update from the previous version, with improved performance, efficiency, and customization options.
+
+Speaker 2: That sounds amazing! What are some of the key features of Llama 3.2?
 """
 
 
@@ -60,7 +70,7 @@ def read_file_to_string(filename: str) -> str:
 
 @llama_writing_actor.task(
     cache=True,
-    cache_version="2",
+    cache_version="3",
     enable_deck=True,
 )
 def write_transcript(pdf_text: union.FlyteFile) -> union.FlyteFile:

@@ -1,12 +1,13 @@
-import os
-
 import union
 from union.app import App
 
 image = union.ImageSpec(
     name="streamlit-app",
+    apt_packages=["git"],
     packages=["streamlit==1.41.1", "union-runtime>=0.1.10", "union==0.1.139"],
-)
+).with_commands([
+    "pip install git+https://github.com/flyteorg/flytekit@5b1833d"
+])
 
 app = App(
     name="notebook-lm-test-4",
@@ -17,12 +18,13 @@ app = App(
         "main.py",
         "--server.port",
         "8080",
+        "--server.enableXsrfProtection",
+        "false",
     ],
     include=[
         "./main.py",
     ],
-    # secrets=[union.Secret(key="huggingface_api_key")],
-    env={"UNION_API_KEY": os.environ.get("UNION_API_KEY")},
+    secrets=[union.Secret(key="union_api_key", env_var="UNION_API_KEY")],
     port=8080,
     limits=union.Resources(cpu="2", mem="2Gi"),
 )

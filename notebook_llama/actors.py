@@ -10,7 +10,7 @@ llama_preprocessing_actor = union.ActorEnvironment(
     name="llama-preprocessing-actor",
     container_image=llm_image,
     requests=union.Resources(gpu="1", mem="2Gi"),
-    ttl_seconds=300,
+    ttl_seconds=60,
     accelerator=accelerators.L4,
     secret_requests=[union.Secret(key="huggingface_api_key")],
     environment={"TRANSFORMERS_VERBOSITY": "debug"},
@@ -20,8 +20,8 @@ llama_preprocessing_actor = union.ActorEnvironment(
 llama_writing_actor = union.ActorEnvironment(
     name="llama-writing-actor",
     container_image=llm_image,
-    requests=union.Resources(gpu="1", mem="2Gi"),
-    ttl_seconds=300,
+    requests=union.Resources(gpu="1", cpu="8", mem="8Gi"),
+    ttl_seconds=60,
     accelerator=accelerators.L4,
     secret_requests=[union.Secret(key="huggingface_api_key")],
     environment={"TRANSFORMERS_VERBOSITY": "debug"},
@@ -31,8 +31,8 @@ llama_writing_actor = union.ActorEnvironment(
 parler_tts_actor = union.ActorEnvironment(
     name="parler-tts-actor",
     container_image=audio_image,
-    requests=union.Resources(gpu="1", mem="4Gi"),
-    ttl_seconds=300,
+    requests=union.Resources(gpu="1", mem="2Gi"),
+    ttl_seconds=60,
     accelerator=accelerators.T4,
     secret_requests=[union.Secret(key="huggingface_api_key")],
     environment={"TRANSFORMERS_VERBOSITY": "debug"},
@@ -43,20 +43,13 @@ parler_tts_actor = union.ActorEnvironment(
 def load_llm_model(model_name: str):
     import torch
     from accelerate import Accelerator
-    from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
+    from transformers import AutoModelForCausalLM, AutoTokenizer
 
     accelerator = Accelerator()
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
         use_safetensors=True,
         torch_dtype=torch.bfloat16,
-        # torch_dtype="auto",
-        # quantization_config=BitsAndBytesConfig(
-        #     load_in_4bit=True,
-        #     bnb_4bit_use_double_quant=True,
-        #     bnb_4bit_quant_type="nf4",
-        #     bnb_4bit_quant_storage=torch.bfloat16,
-        # ),
         device_map="auto",
     )
     tokenizer = AutoTokenizer.from_pretrained(model_name, use_safetensors=True)
@@ -68,7 +61,6 @@ def load_llm_model(model_name: str):
 def load_llm_pipeline(model_name: str):
     import torch
     import transformers
-    from transformers import BitsAndBytesConfig
 
     pipeline = transformers.pipeline(
         "text-generation",
@@ -76,13 +68,6 @@ def load_llm_pipeline(model_name: str):
         model_kwargs={
             "use_safetensors": True,
             "torch_dtype": torch.bfloat16,
-            # "torch_dtype": "auto",
-            # "quantization_config": BitsAndBytesConfig(
-            #     load_in_4bit=True,
-            #     bnb_4bit_use_double_quant=True,
-            #     bnb_4bit_quant_type="nf4",
-            #     bnb_4bit_quant_storage=torch.bfloat16,
-            # ),
         },
         device_map="auto",
     )
@@ -118,9 +103,10 @@ def load_tts_pipeline(model_name: str, device: str, use_4bit: bool = False):
 
 @union.actor_cache
 def load_kokoro_pipeline(device: str):
-    import torch
     from kokoro import KPipeline
 
-    pipeline = KPipeline(lang_code="a", device=device)
-    # pipeline.model = pipeline.model.to(dtype=torch.bfloat16)
+    pipeline = KPipeline(
+        lang_code="a",  # American English
+        device=device,
+    )
     return pipeline

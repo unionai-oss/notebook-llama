@@ -4,7 +4,7 @@ from pathlib import Path
 
 import union
 from flytekit.deck import MarkdownRenderer
-from notebook_llama.images import image
+from notebook_llama.images import llm_image
 from notebook_llama.actors import llama_preprocessing_actor, load_llm_model
 
 
@@ -22,6 +22,8 @@ Please be smart with what you remove and be creative ok?
 Remember DO NOT START SUMMARIZING THIS, YOU ARE ONLY CLEANING UP THE TEXT AND RE-WRITING WHEN NEEDED
 
 Be very smart and aggressive with removing details, you will get a running portion of the text and keep returning the processed text.
+
+Be very smart and aggressive with removing repeating numbers, repeating text, and other text that may have been part of a table or equation.
 
 PLEASE DO NOT ADD MARKDOWN FORMATTING, STOP ADDING SPECIAL CHARACTERS THAT MARKDOWN CAPATILISATION ETC LIKES
 
@@ -177,10 +179,11 @@ def process_chunk(
 
 
 @union.task(
-    container_image=image,
+    container_image=llm_image,
     enable_deck=True,
     cache=True,
-    cache_version="11",
+    cache_version="13",
+    requests=union.Resources(cpu="2", mem="4Gi"),
 )
 def extract_text(pdf_path: union.FlyteFile) -> union.FlyteFile:
 
@@ -223,12 +226,12 @@ def extract_text(pdf_path: union.FlyteFile) -> union.FlyteFile:
 
 @llama_preprocessing_actor.task(
     cache=True,
-    cache_version="4",
+    cache_version="6",
     enable_deck=True,
 )
 def preprocess_pdf(
     input_file: union.FlyteFile,
-    chunk_size: int = 8192,
+    chunk_size: int = 16384,
     max_new_tokens: int = 8192,
 ) -> union.FlyteFile:
     import huggingface_hub
@@ -261,7 +264,7 @@ def preprocess_pdf(
 
     _process_chunk = functools.partial(process_chunk, tokenizer, model, device)
     processed_text = ""
-    # TODO: pull this out into a map task (w/ actors, if it's working)
+
     with open(output_file, "w", encoding="utf-8") as out_file:
         for chunk_num, chunk in enumerate(tqdm(chunks, desc="Processing chunks")):
             # Process chunk and append to complete text
@@ -277,17 +280,13 @@ def preprocess_pdf(
     print(f"Output file: {output_file}")
     print(f"Total chunks processed: {num_chunks}")
 
-    # Preview the beginning and end of the complete processed text
-    print("\nPreview of final processed text:")
-    print("\nBEGINNING:")
-    print(processed_text[:1000])
-    print("\n...\n\nEND:")
-    print(processed_text[-1000:])
-
     union.Deck(
         "Processed Text",
         MarkdownRenderer().to_html(
-            processed_text[:1000] + "\n...\n\n" + processed_text[-1000:]
+            "BEGINNING:\n"
+            + processed_text[:1000]
+            + "\n...\n\nEND:\n"
+            + processed_text[-1000:]
         ),
     )
 

@@ -5,7 +5,7 @@ from pathlib import Path
 import union
 from flytekit.deck import MarkdownRenderer
 
-from notebook_llama.actors import parler_tts_actor, load_tts_pipeline, load_kokoro_pipeline
+from notebook_llama.actors import parler_tts_actor, load_kokoro_pipeline
 
 from tqdm import tqdm
 
@@ -112,10 +112,12 @@ def produce_final_audio(podcast_text: list[list[str]]) -> Path:
 
 @parler_tts_actor.task(
     cache=True,
-    cache_version="3",
+    cache_version="4",
     enable_deck=True,
 )
 def generate_podcast(clean_transcript: union.FlyteFile) -> union.FlyteFile:
+    from IPython.display import Audio
+
     with open(clean_transcript, "r") as f:
         podcast_text = json.load(f)
 
@@ -125,35 +127,15 @@ def generate_podcast(clean_transcript: union.FlyteFile) -> union.FlyteFile:
     assert isinstance(podcast_text[0][1], str)
 
     audio_file = produce_final_audio(podcast_text)
-    return union.FlyteFile(str(audio_file))
-
-
-@parler_tts_actor.task(
-    cache=True,
-    cache_version="1",
-    enable_deck=True,
-    deck_fields=[],
-)
-def create_podcast_deck(podcast: union.FlyteFile, clean_transcript: union.FlyteFile):
-    from IPython.display import Audio
-    import IPython.display as ipd
-
-    podcast.download()
-
-    audio = Audio(podcast.path)
-    ipd.display(audio)
-
+    audio = Audio(audio_file)
     deck = union.Deck(
         name="Generated Podcast",
         html=audio._repr_html_(),
     )
 
-    with open(clean_transcript, "r") as f:
-        podcast_text = json.load(f)
-
     markdown_transcript = "# Podcast Transcript\n\n"
-
     for speaker, text in podcast_text:
         markdown_transcript += f"- **{speaker}:** {text}\n\n"
 
     deck.append(MarkdownRenderer().to_html(markdown_transcript))
+    return union.FlyteFile(str(audio_file))
