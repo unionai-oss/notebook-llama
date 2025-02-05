@@ -9,7 +9,7 @@ from notebook_llama.actors import llama_writing_actor, load_llm_pipeline
 
 N_RETRIES = 30
 DEFAULT_MODEL = "meta-llama/Llama-3.2-3B-Instruct"
-# DEFAULT_MODEL = "meta-llama/Llama-3.1-70B-Instruct"
+LLAMA_3_1_8B_MODEL = "meta-llama/Llama-3.1-8B-Instruct"
 
 SYSTEM_PROMPT = """
 You are an international oscar winning screenwriter
