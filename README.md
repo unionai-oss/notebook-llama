@@ -40,6 +40,13 @@ Once started, you can click on `Open in VSCode` to open the workspace in your br
 
 ## Create your environment
 
+Pull the repo:
+
+```bash
+$ git clone https://github.com/unionai-oss/notebook-llama
+$ cd notebook-llama
+```
+
 Create a virtual environment
 
 ```bash
@@ -56,6 +63,12 @@ $ pip install -r requirements.txt
 This will install the `union` SDK.
 
 ### Create secrets on Union
+
+Authenticate the workspace session:
+
+```bash
+$ union create login --auth device-flow --serverless
+```
 
 Create Union API key called `notebook-llama` for app serving
 
