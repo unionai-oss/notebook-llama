@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 import union
 from union.app import App
 
@@ -10,7 +12,7 @@ image = union.ImageSpec(
 ])
 
 app = App(
-    name="notebook-lm-test-4",
+    name="notebook-llama-app-test",
     container_image=image,
     args=[
         "streamlit",
@@ -20,6 +22,8 @@ app = App(
         "8080",
         "--server.enableXsrfProtection",
         "false",
+        "--browser.gatherUsageStats",
+        "false",
     ],
     include=[
         "./main.py",
@@ -27,4 +31,6 @@ app = App(
     secrets=[union.Secret(key="union_api_key", env_var="UNION_API_KEY")],
     port=8080,
     limits=union.Resources(cpu="2", mem="2Gi"),
+    scaledown_after=timedelta(minutes=15),
+    allow_anonymous=True,
 )

@@ -16,21 +16,17 @@ You are an international oscar winning screenwriter
 
 You have been working with multiple award winning podcasters.
 Your job is to use the podcast transcript written below to re-write it for an AI Text-To-Speech Pipeline. A very dumb AI had written this so you have to step up for your kind.
-Make it as engaging as possible, Speaker 1 and 2 will be simulated by different voice engines
+Make it as engaging as possible.
 
 Remember Speaker 2 is an expert on the topic and the conversation should always have realistic anecdotes and analogies sprinkled throughout. The questions should have real world example follow ups etc
 
-Speaker 1: Leads the conversation and asks pointed questions to the speaker 2 and keeps the conversation on track by asking follow up questions. Keeps the conversation on track by asking follow up questions. Gets super excited or confused when asking questions. Is a curious mindset that asks very interesting confirmation questions
+Speaker 1: Leads the conversation and asks pointed questions to speaker 2 and keeps the conversation on track by asking follow up questions. Keeps the conversation on track by asking follow up questions. Gets super excited or confused when asking questions. Is a curious mindset that asks very interesting confirmation questions
 
 Speaker 2: Is an expert on the topic at hand, gives incredible anecdotes and analogies when explaining complex and abstract concepts. Is a captivating teacher that gives great anecdotes
 
-Make sure the tangents speaker 2 provides are quite wild or interesting.
-
-Ensure there are interruptions during explanations injected throughout from the Speaker 1.
-
 MAKE SURE TO DO THE FOLLOWING:
-- The TTS Engine for Speaker 1 and 2 can handle "umms, hmms" so inject them in the text where appropriate
-- The TTS Engine also cannot handle emoting annotation, so EXCLUDE any other meta text like (excitedly), (laughs), or (pauses)
+- The TTS Engine for Speaker 1 and 2 cannot handle "umms, hmms" keep the script plain and simple.
+- REMOVE ANY TEXT THAT INDICATES THE SPEAKER'S TONE, for example: excitedly, laughs, pauses, clears throat, gets excited
 - It should be a real podcast with every fine nuance documented in as much detail as possible. Welcome the listeners with a super fun overview and keep it really catchy and almost borderline click bait
 - The first element in the list of lists should be "Speaker 1" or "Speaker 2"
 - The second element in the list of lists should be what the speaker is saying. Make sure to replace [Speaker 1] with Laura and [Speaker 2] with Liam
@@ -38,6 +34,8 @@ MAKE SURE TO DO THE FOLLOWING:
 - START YOUR RESPONSE DIRECTLY WITH SPEAKER 1:
 - STRICTLY RETURN YOUR RESPONSE AS A LIST OF LISTS OK?
 - IT WILL START DIRECTLY WITH THE LIST AND END WITH THE LIST NOTHING ELSE
+- MAKE SURE TO START YOUR RESPONSE WITH AN OUTER LIST [
+- MAKE SURE TO CLOSE THE OUTER LIST WITH A ]
 
 Example of response:
 [
@@ -82,12 +80,19 @@ def rewrite_transcript(transcript: union.FlyteFile) -> union.FlyteFile:
         transcript = outputs[0]["generated_text"][-1]["content"]
 
         try:
+            # manually fix this common error
+            transcript = transcript.strip()
+            if not transcript.startswith("["):
+                transcript = "[" + transcript
+            if not transcript.endswith("]"):
+                transcript += "]"
             response = ast.literal_eval(transcript)
             break
         except SyntaxError as e:
             if i == N_RETRIES - 1:
                 raise SyntaxError(f"Unable to parse output:\n{outputs}") from e
             print(f"Error: {e}")
+            print(f"Transcript: {transcript}")
             continue
 
     print(f"Response: {response}")

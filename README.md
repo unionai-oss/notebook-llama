@@ -8,9 +8,10 @@ adapts the [NotebookLlama](https://github.com/meta-llama/llama-cookbook/tree/mai
 
 ### Account creation and API key setup
 
-To run this workshop, you need to create a [HuggingFace](https://huggingface.co/) account.
+To run this workshop, first you need a [Github account](http://www.github.com/).
 
-Then, create HuggingFace API key [here](https://huggingface.co/settings/tokens).
+Next, create a [HuggingFace](https://huggingface.co/) account. On the HuggingFace website,
+create a HuggingFace API key [here](https://huggingface.co/settings/tokens).
 
 ![Create HuggingFace API key](static/huggingface_api_key.png)
 
@@ -77,5 +78,5 @@ union run --remote notebook_llama/pdf_to_podcast.py pdf_to_podcast --pdf_path da
 Deploy the streamlit app:
 
 ```bash
-union deploy apps app.py notebook-lm-test-4
+union deploy apps app.py notebook-llama-app-test
 ```
