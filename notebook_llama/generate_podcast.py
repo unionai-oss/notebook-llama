@@ -7,11 +7,6 @@ from flytekit.deck import MarkdownRenderer
 
 from notebook_llama.actors import parler_tts_actor, load_kokoro_pipeline
 
-from tqdm import tqdm
-
-import torch
-import numpy as np
-
 
 speaker1_description = """
 Laura's voice is expressive and dramatic in delivery, speaking at a moderately fast pace with a very close recording that almost has no background noise.
@@ -55,6 +50,7 @@ def generate_kokoro_speaker_audio(pipeline, text: str, voice: str):
 
 def numpy_to_audio_segment(audio_arr, sampling_rate):
     """Convert numpy array to AudioSegment"""
+    import numpy as np
     from scipy.io import wavfile
     from pydub import AudioSegment
 
@@ -71,6 +67,9 @@ def numpy_to_audio_segment(audio_arr, sampling_rate):
 
 
 def produce_final_audio(podcast_text: list[list[str]]) -> Path:
+    import torch
+    from tqdm import tqdm
+
     device = "cuda" if torch.cuda.is_available() else "cpu"
     final_audio = None
 
