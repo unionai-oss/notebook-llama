@@ -2,8 +2,6 @@ import json
 import streamlit as st
 import union
 
-from streamlit.runtime.scriptrunner import add_script_run_ctx
-
 
 WORKFLOW_NAME = "notebook_llama.pdf_to_podcast.pdf_to_podcast"
 UPLOAD_FILE_PATH = "./uploaded_file.pdf"
