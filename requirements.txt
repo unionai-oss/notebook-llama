@@ -1,2 +1,2 @@
 union
-git+https://github.com/flyteorg/flytekit@5b1833d
+flytekit==1.15.0b2

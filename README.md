@@ -30,19 +30,43 @@ should look something like this:
 On the bottom right, you should see that you have `$ 30` in credits, which is
 sufficient for running this workshop.
 
+## Start a workspace
 
-### Create secrets on Union
+Start the `default` workspace through the Union dashboard.
 
-Once you have an account, install the `union` SDK:
+![Start Workspace](static/workspace.png)
+
+Once started, you can click on `Open in VSCode` to open the workspace in your browser.
+
+## Create your environment
+
+Create a virtual environment
 
 ```bash
-$ pip install union
+$ python3 -m venv .venv
+$ source .venv/bin/activate
 ```
+
+Install the requirements:
+
+```bash
+$ pip install -r requirements.txt
+```
+
+This will install the `union` SDK.
+
+### Create secrets on Union
 
 Create Union API key called `notebook-llama` for app serving
 
 ```bash
 $ union create api-key admin --name notebook-llama
+```
+
+You can list the api keys you have with:
+
+```bash
+$ union get api-key admin
 ```
 
 Then create Union secret for the HuggingFace API key we created in the step above:
@@ -58,7 +82,6 @@ Now do the same with the `notebook-llama` app serving Union API key:
 
 ```bash
 $ union create secret union_api_key
-Enter secret value:
 ```
 
 ## Quickstart
@@ -66,17 +89,17 @@ Enter secret value:
 Run the workflow with a PDF file from a URL:
 
 ```bash
-union run --remote notebook_llama/pdf_to_podcast.py pdf_to_podcast --pdf_path https://www.biorxiv.org/content/10.1101/544593v2.full.pdf
+$ union run --remote notebook_llama/pdf_to_podcast.py pdf_to_podcast --pdf_path https://www.biorxiv.org/content/10.1101/544593v2.full.pdf
 ```
 
 Run the workflow with a local PDF file:
 
 ```bash
-union run --remote notebook_llama/pdf_to_podcast.py pdf_to_podcast --pdf_path data/544593v2.full.pdf
+$ union run --remote notebook_llama/pdf_to_podcast.py pdf_to_podcast --pdf_path data/544593v2.full.pdf
 ```
 
 Deploy the streamlit app:
 
 ```bash
-union deploy apps app.py notebook-llama-app-test
+$ union deploy apps app.py notebook-llama-app-test
 ```
