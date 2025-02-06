@@ -4,6 +4,9 @@ This repo contains an open source implementation of NotebookLM that runs on Unio
 adapts the [NotebookLlama](https://github.com/meta-llama/llama-cookbook/tree/main/end-to-end-use-cases/NotebookLlama) example in Meta's
 [`llama-cookbook`](https://github.com/meta-llama/llama-cookbook) repo.
 
+- 🌠 Workshop slides: https://go.union.ai/odsc-ai-builders-2025
+- 📱 Example app: https://square-sound-0c70d.apps.serverless-1.us-east-2.s.union.ai/
+
 ## Setup
 
 ### Account creation and API key setup
@@ -119,5 +122,5 @@ $ union create secret union_api_key
 Deploy the streamlit app:
 
 ```bash
-$ union deploy apps app.py notebook-llama-app
+$ union deploy apps app.py notebook-llama
 ```

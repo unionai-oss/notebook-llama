@@ -12,7 +12,7 @@ image = union.ImageSpec(
 ])
 
 app = App(
-    name="notebook-llama-app",
+    name="notebook-llama",
     container_image=image,
     args=[
         "streamlit",
