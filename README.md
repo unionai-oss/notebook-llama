@@ -101,5 +101,5 @@ $ union run --remote notebook_llama/pdf_to_podcast.py pdf_to_podcast --pdf_path 
 Deploy the streamlit app:
 
 ```bash
-$ union deploy apps app.py notebook-llama-app-test
+$ union deploy apps app.py notebook-llama-app
 ```
