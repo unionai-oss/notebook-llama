@@ -10,6 +10,8 @@ remote = union.UnionRemote()
 
 if "running_execution_id" not in st.session_state:
     st.session_state["running_execution_id"] = None
+if "current_pdf_path" not in st.session_state:
+    st.session_state["current_pdf_path"] = None
 
 
 def generate_podcast(filepath_or_url: str) -> tuple[str, str]:
@@ -60,6 +62,7 @@ def wait_for_execution(execution_id: str):
             if execution.is_done:
                 bar.empty()
                 status.update(label="🎙️ Podcast generated!", state="complete", expanded=False)
+                st.session_state["running_execution_id"] = None
                 break
 
     podcast_audio_file = execution.outputs["podcast"]
@@ -96,18 +99,41 @@ def main():
 
         podcast_audio_file, transcript_file = None, None
 
-        if st.button("Generate Podcast", type="primary") or st.session_state["running_execution_id"]:
+        # overwrite the current pdf path if it's different
+        if st.session_state["current_pdf_path"] != pdf_path:
+            st.session_state["current_pdf_path"] = pdf_path
+
+        has_running_execution = (
+            st.session_state["running_execution_id"] is not None
+            and st.session_state["current_pdf_path"] is not None
+            and st.session_state["current_pdf_path"] != pdf_path
+        )
+
+        generate_button = st.button("Generate Podcast", type="primary", disabled=has_running_execution)
+
+        if generate_button or has_running_execution:
             if pdf_path is None or pdf_path == "":
                 st.error("Please upload a PDF or enter a PDF URL.")
+                return
             else:
                 execution_id = (
                     st.session_state["running_execution_id"]
-                    or generate_podcast(pdf_path)
+                    if has_running_execution
+                    else generate_podcast(pdf_path)
                 )
-                podcast_audio_file, transcript_file = wait_for_execution(execution_id)
+
+            podcast_audio_file, transcript_file = wait_for_execution(execution_id)
 
         if podcast_audio_file is not None:
             st.audio(podcast_audio_file)
+
+            with open(podcast_audio_file, "rb") as f:
+                st.download_button(
+                    label="Download Podcast",
+                    data=f,
+                    file_name="podcast.mp3",
+                    mime="audio/mp3",
+                )
 
             with open(transcript_file, "r") as f:
                 transcript = json.load(f)
