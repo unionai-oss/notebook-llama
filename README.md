@@ -5,7 +5,7 @@ adapts the [NotebookLlama](https://github.com/meta-llama/llama-cookbook/tree/mai
 [`llama-cookbook`](https://github.com/meta-llama/llama-cookbook) repo.
 
 - 🌠 Workshop slides: https://go.union.ai/workshop-notebook-lm-clone
-- 📱 Example app: https://square-sound-0c70d.apps.serverless-1.us-east-2.s.union.ai/
+- 📱 Example app: https://shy-sun-51a14.apps.serverless-1.us-east-2.s.union.ai/
 
 ## Prerequisites
 
