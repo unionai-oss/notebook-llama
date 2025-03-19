@@ -1,4 +1,4 @@
-# 📖🦙 NotebookLlama on Union
+# 📖🦙 NotebookLM Clone based on Llama Open Weights Models
 
 This repo contains an open source implementation of NotebookLM that runs on Union. This repo
 adapts the [NotebookLlama](https://github.com/meta-llama/llama-cookbook/tree/main/end-to-end-use-cases/NotebookLlama) example in Meta's
@@ -7,9 +7,7 @@ adapts the [NotebookLlama](https://github.com/meta-llama/llama-cookbook/tree/mai
 - 🌠 Workshop slides: https://go.union.ai/workshop-notebook-lm-clone
 - 📱 Example app: https://square-sound-0c70d.apps.serverless-1.us-east-2.s.union.ai/
 
-## Setup
-
-### Account creation and API key setup
+## Prerequisites
 
 To run this workshop, first you need a [Github account](http://www.github.com/).
 
@@ -34,36 +32,37 @@ account. On the HuggingFace website, then, create a HuggingFace API key
 If you don't already, request access to the [Llama 3.2 3B model](https://huggingface.co/meta-llama/Llama-3.2-3B-Instruct)
 and [Llama 3.2 1B model](https://huggingface.co/meta-llama/Llama-3.2-1B-Instruct).
 
-## Start a workspace
+## Workshop
 
-We'll be running this workshop in a Union workspace. To start the `default` workspace,
-click on the **Workspaces** button on the left and click on the start switch.
+If you're here for the workshop, head over to the Google colab notebook here:
 
-![Start Workspace](static/workspace.png)
+<a target="_blank" href="https://colab.research.google.com/github/unionai-oss/notebook-llama/blob/main/workshop.ipynb">
+  <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/>
+</a>
 
-Once started, you can click on `Open in VSCode` to open the workspace in your browser.
+Follow the steps below to run the contents of this repo from a CLI.
+
 
 ## Create your environment
 
 Pull the repo:
 
 ```bash
-git clone https://github.com/unionai-oss/notebook-llama
-cd notebook-llama
+$ git clone https://github.com/unionai-oss/notebook-llama
+$ cd notebook-llama
 ```
 
 Create a virtual environment
 
 ```bash
-pip install uv
-uv venv
-source .venv/bin/activate
+$ python3 -m venv .venv
+$ source .venv/bin/activate
 ```
 
 Install the requirements:
 
 ```bash
-uv pip install -r requirements.txt
+$ pip install -r requirements.txt
 ```
 
 This will install the `union` SDK.
@@ -73,13 +72,13 @@ This will install the `union` SDK.
 Authenticate the workspace session:
 
 ```bash
-union create login --auth device-flow --serverless
+$ union create login --auth device-flow --serverless
 ```
 
 Then create Union secret for the HuggingFace API key we created in the step above:
 
 ```bash
-union create secret huggingface_api_key
+$ union create secret huggingface_api_key
 ```
 
 You should see a `Enter secret value:` prompt to paste on the secret value.
@@ -91,54 +90,37 @@ his will create a secret in Union with the name `huggingface_api_key`.
 Run the workflow with a PDF file from a URL:
 
 ```bash
-union run --remote notebook_llama/pdf_to_podcast.py pdf_to_podcast --pdf_path https://arxiv.org/pdf/2503.10865
+$ union run --remote notebook_llama/pdf_to_podcast.py pdf_to_podcast --pdf_path https://arxiv.org/pdf/2503.10865
 ```
 
 Run the workflow with a local PDF file:
 
 ```bash
-union run --remote notebook_llama/pdf_to_podcast.py pdf_to_podcast --pdf_path data/544593v2.full.pdf
+$ union run --remote notebook_llama/pdf_to_podcast.py pdf_to_podcast --pdf_path data/544593v2.full.pdf
 ```
-
-## Workshop
-
-Register the tasks and workflows:
-
-```bash
-union register notebook_llama
-```
-
-Now open the workshop.ipynb file to follow along with the workshop.
 
 ## Serve the UI App
 
 First, create Union API key called `notebook-llama` for app serving
 
 ```bash
-union create api-key admin --name notebook-llama
+$ union create api-key admin --name notebook-llama
 ```
 
 You can list the api keys you have with:
 
 ```bash
-union get api-key admin
+$ union get api-key admin
 ```
 
 Then, create an Union API key for the `notebook-llama` app:
 
 ```bash
-union create secret union_api_key
-```
-
-You'll be prompted to enter the secret value. Copy the value of the API key and
-paste it in the prompt.
-
-```
-Enter secret value:
+$ union create secret union_api_key
 ```
 
 Deploy the streamlit app:
 
 ```bash
-union deploy apps app.py notebook-llama-app
+$ union deploy apps app.py notebook-llama-streamlit
 ```

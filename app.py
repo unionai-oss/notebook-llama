@@ -11,7 +11,7 @@ image = union.ImageSpec(
 )
 
 app = App(
-    name="notebook-llama-app",
+    name="notebook-llama-streamlit",
     container_image=image,
     args="streamlit run main.py --server.port 8080 "
         "--server.enableXsrfProtection false "
