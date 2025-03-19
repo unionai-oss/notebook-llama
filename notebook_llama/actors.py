@@ -10,7 +10,7 @@ llama_preprocessing_actor = union.ActorEnvironment(
     name="llama-preprocessing-actor",
     container_image=llm_image,
     requests=union.Resources(gpu="1", mem="2Gi"),
-    ttl_seconds=60,
+    ttl_seconds=600,
     accelerator=accelerators.L4,
     secret_requests=[union.Secret(key="huggingface_api_key")],
     environment={"TRANSFORMERS_VERBOSITY": "debug"},
@@ -21,18 +21,18 @@ llama_writing_actor = union.ActorEnvironment(
     name="llama-writing-actor",
     container_image=llm_image,
     requests=union.Resources(gpu="1", cpu="8", mem="8Gi"),
-    ttl_seconds=60,
+    ttl_seconds=600,
     accelerator=accelerators.L4,
     secret_requests=[union.Secret(key="huggingface_api_key")],
     environment={"TRANSFORMERS_VERBOSITY": "debug"},
 )
 
 
-parler_tts_actor = union.ActorEnvironment(
+tts_actor = union.ActorEnvironment(
     name="parler-tts-actor",
     container_image=audio_image,
     requests=union.Resources(gpu="1", mem="2Gi"),
-    ttl_seconds=60,
+    ttl_seconds=600,
     accelerator=accelerators.T4,
     secret_requests=[union.Secret(key="huggingface_api_key")],
     environment={"TRANSFORMERS_VERBOSITY": "debug"},

@@ -5,7 +5,7 @@ from pathlib import Path
 import union
 from flytekit.deck import MarkdownRenderer
 
-from notebook_llama.actors import parler_tts_actor, load_kokoro_pipeline
+from notebook_llama.actors import tts_actor, load_kokoro_pipeline
 
 
 speaker1_description = """
@@ -80,7 +80,7 @@ def produce_final_audio(podcast_text: list[list[str]]) -> Path:
         podcast_text, desc="Generating podcast segments", unit="segment"
     ):
         text = text.replace("\n", " ")
-        if speaker in {"Laura", "Speaker 1"}:
+        if speaker in {"Laura", "Speaker 1"} or "Laura" in speaker or "Speaker 1" in speaker:
             audio_arr, rate = generate_kokoro_speaker_audio(
                 kokoro_pipeline, text, "af_heart"
             )
@@ -109,9 +109,9 @@ def produce_final_audio(podcast_text: list[list[str]]) -> Path:
     return output_file
 
 
-@parler_tts_actor.task(
+@tts_actor.task(
     cache=True,
-    cache_version="4",
+    cache_version="5",
     enable_deck=True,
 )
 def generate_podcast(clean_transcript: union.FlyteFile) -> union.FlyteFile:

@@ -1,3 +1,4 @@
+import os
 import json
 import streamlit as st
 import union
@@ -6,7 +7,10 @@ import union
 WORKFLOW_NAME = "notebook_llama.pdf_to_podcast.pdf_to_podcast"
 UPLOAD_FILE_PATH = "./uploaded_file.pdf"
 
-remote = union.UnionRemote()
+remote = union.UnionRemote(
+    default_project="default",
+    default_domain="development",
+)
 
 if "running_execution_id" not in st.session_state:
     st.session_state["running_execution_id"] = None
@@ -79,7 +83,7 @@ def main():
     st.write("Powered by [Union](https://union.ai)")
     st.write("Generates a podcast from a PDF.")
 
-    default_url = "https://www.biorxiv.org/content/10.1101/544593v2.full.pdf"
+    default_url = "https://arxiv.org/pdf/2503.10865"
     pdf_url = st.text_input("Enter a PDF URL", value=default_url)
     uploaded_file = st.file_uploader("Or upload a PDF.")
     

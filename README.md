@@ -4,7 +4,7 @@ This repo contains an open source implementation of NotebookLM that runs on Unio
 adapts the [NotebookLlama](https://github.com/meta-llama/llama-cookbook/tree/main/end-to-end-use-cases/NotebookLlama) example in Meta's
 [`llama-cookbook`](https://github.com/meta-llama/llama-cookbook) repo.
 
-- 🌠 Workshop slides: https://go.union.ai/odsc-ai-builders-2025
+- 🌠 Workshop slides: https://go.union.ai/workshop-notebook-lm-clone
 - 📱 Example app: https://square-sound-0c70d.apps.serverless-1.us-east-2.s.union.ai/
 
 ## Setup
@@ -48,21 +48,22 @@ Once started, you can click on `Open in VSCode` to open the workspace in your br
 Pull the repo:
 
 ```bash
-$ git clone https://github.com/unionai-oss/notebook-llama
-$ cd notebook-llama
+git clone https://github.com/unionai-oss/notebook-llama
+cd notebook-llama
 ```
 
 Create a virtual environment
 
 ```bash
-$ python3 -m venv .venv
-$ source .venv/bin/activate
+pip install uv
+uv venv
+source .venv/bin/activate
 ```
 
 Install the requirements:
 
 ```bash
-$ pip install -r requirements.txt
+uv pip install -r requirements.txt
 ```
 
 This will install the `union` SDK.
@@ -72,13 +73,13 @@ This will install the `union` SDK.
 Authenticate the workspace session:
 
 ```bash
-$ union create login --auth device-flow --serverless
+union create login --auth device-flow --serverless
 ```
 
 Then create Union secret for the HuggingFace API key we created in the step above:
 
 ```bash
-$ union create secret huggingface_api_key
+union create secret huggingface_api_key
 ```
 
 You should see a `Enter secret value:` prompt to paste on the secret value.
@@ -90,37 +91,54 @@ his will create a secret in Union with the name `huggingface_api_key`.
 Run the workflow with a PDF file from a URL:
 
 ```bash
-$ union run --remote notebook_llama/pdf_to_podcast.py pdf_to_podcast --pdf_path https://www.biorxiv.org/content/10.1101/544593v2.full.pdf
+union run --remote notebook_llama/pdf_to_podcast.py pdf_to_podcast --pdf_path https://arxiv.org/pdf/2503.10865
 ```
 
 Run the workflow with a local PDF file:
 
 ```bash
-$ union run --remote notebook_llama/pdf_to_podcast.py pdf_to_podcast --pdf_path data/544593v2.full.pdf
+union run --remote notebook_llama/pdf_to_podcast.py pdf_to_podcast --pdf_path data/544593v2.full.pdf
 ```
+
+## Workshop
+
+Register the tasks and workflows:
+
+```bash
+union register notebook_llama
+```
+
+Now open the workshop.ipynb file to follow along with the workshop.
 
 ## Serve the UI App
 
 First, create Union API key called `notebook-llama` for app serving
 
 ```bash
-$ union create api-key admin --name notebook-llama
+union create api-key admin --name notebook-llama
 ```
 
 You can list the api keys you have with:
 
 ```bash
-$ union get api-key admin
+union get api-key admin
 ```
 
 Then, create an Union API key for the `notebook-llama` app:
 
 ```bash
-$ union create secret union_api_key
+union create secret union_api_key
+```
+
+You'll be prompted to enter the secret value. Copy the value of the API key and
+paste it in the prompt.
+
+```
+Enter secret value:
 ```
 
 Deploy the streamlit app:
 
 ```bash
-$ union deploy apps app.py notebook-llama
+union deploy apps app.py notebook-llama-app
 ```

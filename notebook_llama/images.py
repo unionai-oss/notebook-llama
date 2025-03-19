@@ -2,7 +2,7 @@ import union
 
 
 llm_image = union.ImageSpec(
-    name="notebook_llama",
+    name="notebook_llama_image_v0",
     packages=[
         "requests==2.32.3",
         "PyPDF2>=3.0.0",
@@ -13,7 +13,8 @@ llm_image = union.ImageSpec(
         "rich>=13.0.0",
         "ipywidgets>=8.0.0",
         "tqdm>=4.66.0",
-        "union==0.1.139",
+        "union==0.1.162",
+        "flytekit==1.15.3",
     ],
 )
 

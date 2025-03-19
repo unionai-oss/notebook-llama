@@ -6,25 +6,16 @@ from union.app import App
 image = union.ImageSpec(
     name="streamlit-app",
     apt_packages=["git"],
-    packages=["streamlit==1.41.1", "union-runtime>=0.1.10", "union==0.1.139"],
-).with_commands([
-    "pip install git+https://github.com/flyteorg/flytekit@5b1833d"
-])
+    packages=["streamlit==1.41.1", "union-runtime>=0.1.10", "union>=0.1.160"],
+    builder="union",
+)
 
 app = App(
-    name="notebook-llama",
+    name="notebook-llama-app",
     container_image=image,
-    args=[
-        "streamlit",
-        "run",
-        "main.py",
-        "--server.port",
-        "8080",
-        "--server.enableXsrfProtection",
-        "false",
-        "--browser.gatherUsageStats",
-        "false",
-    ],
+    args="streamlit run main.py --server.port 8080 "
+        "--server.enableXsrfProtection false "
+        "--browser.gatherUsageStats false",
     include=[
         "./main.py",
     ],
@@ -32,5 +23,5 @@ app = App(
     port=8080,
     limits=union.Resources(cpu="2", mem="2Gi"),
     scaledown_after=timedelta(minutes=15),
-    allow_anonymous=True,
+    requires_auth=False,
 )

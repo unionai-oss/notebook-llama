@@ -1,3 +1,5 @@
 union
-flytekit==1.15.0b2
+flytekit
 rich
+pip
+ipykernel

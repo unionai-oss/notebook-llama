@@ -88,9 +88,9 @@ def rewrite_transcript(transcript: union.FlyteFile) -> union.FlyteFile:
                 transcript += "]"
             response = ast.literal_eval(transcript)
             break
-        except SyntaxError as e:
+        except (SyntaxError, ValueError) as e:
             if i == N_RETRIES - 1:
-                raise SyntaxError(f"Unable to parse output:\n{outputs}") from e
+                raise
             print(f"Error: {e}")
             print(f"Transcript: {transcript}")
             continue
