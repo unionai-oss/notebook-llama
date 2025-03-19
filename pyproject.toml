@@ -1,0 +1,25 @@
+[project]
+name = "notebook-llama"
+version = "0.0.0"
+authors = [
+    {name = "Niels Bantilan", email = "niels@union.ai"},
+]
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "MIT"}
+dependencies = [
+    "union",
+    "flytekit",
+    "rich",
+    "pip",
+    "ipykernel",
+]
+
+[tool.setuptools]
+packages = ["notebook_llama"]
+
+[tool.black]
+line-length = 88
+
+[tool.isort]
+profile = "black"
