@@ -7,7 +7,6 @@ from notebook_llama.actors import llama_writing_actor, load_llm_pipeline
 
 
 DEFAULT_MODEL = "meta-llama/Llama-3.2-3B-Instruct"
-LLAMA_3_1_8B_MODEL = "meta-llama/Llama-3.1-8B-Instruct"
 
 SYSTEM_PROMPT = """
 You are the a world-class podcast writer, you have worked with many of the top podcasters in the world, like Ira Glass, Stephen J. Dubner, and many more.
