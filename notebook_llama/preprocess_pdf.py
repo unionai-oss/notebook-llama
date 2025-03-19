@@ -217,7 +217,7 @@ def extract_text(pdf_path: union.FlyteFile) -> union.FlyteFile:
     extracted_text = extracted_text or "No text extracted"
     _dir = union.current_context().working_directory
     output_file = Path(_dir) / "extracted_text.txt"
-    with open(output_file, "w", encoding="utf-8") as f:
+    with open(output_file, "w", encoding="utf-8", errors="ignore") as f:
         f.write(extracted_text)
     print(f"\nExtracted text has been saved to {output_file}")
     union.Deck("Extracted Text", MarkdownRenderer().to_html(extracted_text))
